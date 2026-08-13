@@ -1,0 +1,7 @@
+
+make
+make install
+
+~/pg_custom_build/bin/pg_ctl -D ~/pgdata -o "-p 5433" -l logfile restart
+~/pg_custom_build/bin/pg_ctl -D ~/pgdata -o "-p 5433" -l ~/logfile restart
+~/pg_custom_build/bin/psql -p 5433 -d postgres

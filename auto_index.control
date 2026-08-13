@@ -1,4 +1,3 @@
-@@ -0,0 +1,3 @@
-comment = 'Extension that overrides syntax errors with "mc"'
+comment = 'Automatic index creation extension'
 default_version = '1.0'
 module_pathname = '$libdir/auto_index'

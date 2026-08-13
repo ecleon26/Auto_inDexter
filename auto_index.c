@@ -1,44 +1,59 @@
-@@ -0,0 +1,43 @@
 #include "postgres.h"
 #include "fmgr.h"
+#include "optimizer/planner.h"
+#include "executor/spi.h"
 #include "utils/elog.h"
 
+#include "auto_index.h"
+
 #ifdef PG_MODULE_MAGIC
-PG_MODULE_MAGIC;
+
 #endif
+planner_hook_type prev_planner_hook = NULL;
 
-static emit_log_hook_type prev_log_hook = NULL;
-
-static void
-mc_log_hook(ErrorData *edata)
+static PlannedStmt *
+auto_index_planner_hook(Query *parse, const char *query_string, int cursorOptions, ParamListInfo boundParams)
 {
-    if (edata->elevel >= ERROR &&
-        edata->sqlerrcode == ERRCODE_SYNTAX_ERROR)
+
+    PlannedStmt *stmt;
+    const char *sql;
+
+    if (prev_planner_hook && prev_planner_hook != auto_index_planner_hook)
+        stmt = prev_planner_hook(parse, query_string, cursorOptions, boundParams);
+    else
+        stmt = standard_planner(parse, query_string, cursorOptions, boundParams);
+
+    sql = "INSERT INTO aidx_queries (tablename, colname, cost, benefit) "
+          "VALUES ('dummy_table', 'col1', 50.0, 10.0) "
+          "ON CONFLICT DO NOTHING;";
+
+    if (SPI_connect() == SPI_OK_CONNECT)
     {
-        edata->message = pstrdup("mc");
+        SPI_exec(sql, 0);
+        SPI_finish();
+    }
+    else
+    {
+        elog(WARNING, "AutoIndex: SPI_connect failed");
     }
 
-    if (prev_log_hook)
-        prev_log_hook(edata);
+    return stmt;
 }
-
 void
 _PG_init(void)
 {
-    prev_log_hook = emit_log_hook;
-    emit_log_hook = mc_log_hook;
+    elog(LOG, "AutoIndex: installing planner hook");
+    if (planner_hook != auto_index_planner_hook)
+    {
+        prev_planner_hook = planner_hook;
+        planner_hook = auto_index_planner_hook;
+    }
 }
 
 void
 _PG_fini(void)
 {
-    emit_log_hook = prev_log_hook;
-}
-
-PG_FUNCTION_INFO_V1(mc_dummy);
-
-Datum
-mc_dummy(PG_FUNCTION_ARGS)
-{
-    PG_RETURN_VOID();
+   
+    if (planner_hook == auto_index_planner_hook)
+        planner_hook = prev_planner_hook;
 }
