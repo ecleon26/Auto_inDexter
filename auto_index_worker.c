@@ -42,8 +42,7 @@ auto_index_worker_main(Datum main_arg)
             continue;
         }
 
-        const char *query = "SELECT tablename, colname FROM aidx_queries WHERE benefit > cost";
-
+         const char *query = "SELECT tablename, colname FROM aidx_queries WHERE benefit * num_queries > cost;";
         ret = SPI_exec(query, 0);
         if (ret != SPI_OK_SELECT)
         {
