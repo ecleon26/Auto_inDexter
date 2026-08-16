@@ -1,7 +1,14 @@
-
+inside that contrib/auto_index
+source .bashrc
+make clean
 make
 make install
 
-~/pg_custom_build/bin/pg_ctl -D ~/pgdata -o "-p 5433" -l logfile restart
 ~/pg_custom_build/bin/pg_ctl -D ~/pgdata -o "-p 5433" -l ~/logfile restart
 ~/pg_custom_build/bin/psql -p 5433 -d postgres
+
+
+for force stopping the database
+~/pg_custom_build/bin/pg_ctl -D /home/tanish/pgdata stop -m immediate
+
+pgdata me h postgresql.conf file
