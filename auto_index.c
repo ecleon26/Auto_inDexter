@@ -97,27 +97,61 @@ auto_index_planner_hook(Query *parse, const char *query_string, int cursorOption
    
     elog(LOG, "AutoIndex: Planner hook triggered");
 
-    PlannedStmt *stmt;
+    if (parse->commandType == CMD_SELECT)
+        
+    {
+        elog(LOG, "AutoIndex: Processing SELECT query...");
 
-   
-    if(parse->commandType == CMD_SELECT){
-        elog(LOG, "AutoIndex: SELECT QUERY AAAAYA!!!");
         
-    }
-    
-    if (prev_planner_hook)
-    {
-        elog(LOG, "AutoIndex: If me ghuse");
-        stmt = prev_planner_hook(parse, query_string, cursorOptions, boundParams);
-    }
-    else
+        ListCell *lc;
+        foreach (lc, parse->rtable)
+        {
+            RangeTblEntry *rte = (RangeTblEntry *) lfirst(lc);
+            if (rte->rtekind == RTE_RELATION)
+            {
+                elog(LOG, "AutoIndex: Table: %s", get_rel_name(rte->relid));
+            }
+        }
+
         
-    {
+        foreach (lc, parse->targetList)
+        {
+            TargetEntry *tle = (TargetEntry *) lfirst(lc);
+            if (tle->resjunk) continue; 
+            
+            if (IsA(tle->expr, Var))
+            {
+                Var *var = (Var *) tle->expr;
+
+                
+                RangeTblEntry *rte = (RangeTblEntry *) list_nth(parse->rtable, var->varno - 1);
+                
+                if (rte->rtekind == RTE_RELATION)
+                {
+                    const char *colname = get_attname(rte->relid, var->varattno, false);
+                    elog(LOG, "AutoIndex: Table: %s, Column: %s", rte->eref->aliasname, colname);
+                }
+            }
+        }
+
+       
+        if (parse->jointree && parse->jointree->quals)
+        {
+            Node *whereClause = parse->jointree->quals;
+            elog(LOG, "AutoIndex: WHERE clause detected!");
+
+            if (IsA(whereClause, OpExpr))
+            {
+                OpExpr *op = (OpExpr *) whereClause;
+                elog(LOG, "AutoIndex: Operator used: %s", get_opname(op->opno));
+            }
+        }
         
-        elog(LOG, "AutoIndex: else me ghuse");
-        stmt = standard_planner(parse, query_string, cursorOptions, boundParams);
+       
     }
-    
+    PlannedStmt *stmt = prev_planner_hook ? 
+                        prev_planner_hook(parse, query_string, cursorOptions, boundParams) : 
+                        standard_planner(parse, query_string, cursorOptions, boundParams);
 
     return stmt;
 }
