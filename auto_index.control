@@ -1,3 +1,4 @@
 comment = 'Automatic index creation extension'
 default_version = '1.0'
 module_pathname = '$libdir/auto_index'
+relocatable = true

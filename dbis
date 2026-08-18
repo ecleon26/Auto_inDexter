@@ -9,6 +9,9 @@ make install
 
 
 for force stopping the database
-~/pg_custom_build/bin/pg_ctl -D /home/tanish/pgdata stop -m immediate
+~/pg_custom_build/bin/pg_ctl -D /home/adnan/pgdata stop -m immediate
 
 pgdata me h postgresql.conf file
+/home/adnan/pg_custom_build/bin/initdb -D ~/pgdata
+
+pg_stat_statements extension does the same scanning work we have to do so might be useful to look at it
